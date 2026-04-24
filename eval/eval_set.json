@@ -1,0 +1,26 @@
+[
+  {
+    "question": "What is the learning rate schedule used in the Transformer paper?",
+    "expected_source_substring": "1706",
+    "must_mention_any": ["warmup", "warmup_steps", "4000", "learning rate"],
+    "type": "factual"
+  },
+  {
+    "question": "How many encoder and decoder layers does the base Transformer model have?",
+    "expected_source_substring": "1706",
+    "must_mention_any": ["6", "six"],
+    "type": "factual"
+  },
+  {
+    "question": "What is scaled dot-product attention and how is it different from additive attention?",
+    "expected_source_substring": "1706",
+    "must_mention_any": ["dot-product", "additive", "scaled"],
+    "type": "comparison"
+  },
+  {
+    "question": "Why does the Transformer use positional encodings instead of recurrence?",
+    "expected_source_substring": "1706",
+    "must_mention_any": ["positional", "recurrence", "sinusoidal", "order"],
+    "type": "multihop"
+  }
+]
