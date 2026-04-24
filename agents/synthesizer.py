@@ -9,7 +9,7 @@ from groq import Groq
 
 from .state import GraphState
 
-SYNTH_MODEL = "llama-3.3-70b-versatile"
+SYNTH_MODEL = "llama-3.1-8b-instant"
 
 SYNTH_SYSTEM = """You are a research assistant answering questions about \
 academic papers.
@@ -51,6 +51,9 @@ def _format_chunks(chunks: list[dict]) -> str:
     return "\n\n---\n\n".join(lines)
 
 
+MAX_SYNTH_CHUNKS = 5  # Keeps the synth call under the 8B 6K TPM bucket
+
+
 def synthesize(state: GraphState) -> GraphState:
     question = state["question"]
     chunks = state.get("chunks", [])
@@ -61,9 +64,11 @@ def synthesize(state: GraphState) -> GraphState:
                       "to answer this question."
         }
 
+    synth_chunks = chunks[:MAX_SYNTH_CHUNKS]
+
     user_content = (
         f"Question: {question}\n\n"
-        f"Excerpts:\n\n{_format_chunks(chunks)}\n\n"
+        f"Excerpts:\n\n{_format_chunks(synth_chunks)}\n\n"
         f"Answer the question using only these excerpts, with inline "
         f"[source, p.N] citations."
     )

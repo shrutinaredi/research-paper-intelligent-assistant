@@ -12,7 +12,7 @@ from pydantic import BaseModel, ValidationError
 
 from .state import GraphState
 
-CRITIC_MODEL = "llama-3.3-70b-versatile"
+CRITIC_MODEL = "llama-3.1-8b-instant"
 
 CRITIC_SYSTEM = """You are a verifier for a research-paper Q&A system.
 

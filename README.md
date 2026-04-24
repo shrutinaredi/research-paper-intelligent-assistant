@@ -4,7 +4,7 @@ A multi-agent research assistant that answers questions over a private
 library of PDF research papers with page-level citations.
 
 Orchestrated with **LangGraph** on top of the **Groq API**
-(Llama 3.3 70B + Llama 3.1 8B), with a local **ChromaDB** vector store.
+(Llama 3.1 8B Instant), with a local **ChromaDB** vector store.
 
 ## Architecture
 
@@ -21,11 +21,11 @@ question
    ↓
 ┌─────────────┐
 │ Synthesizer │  answer with inline [source, p.N] citations
-└─────────────┘                                   — Llama 3.3 70B Versatile
+└─────────────┘                                      — Llama 3.1 8B Instant
    ↓
 ┌────────┐
 │ Critic │  verify every claim is grounded in a retrieved chunk
-└────────┘                                   — Llama 3.3 70B Versatile
+└────────┘                                           — Llama 3.1 8B Instant
    ↓                 ↘ if unsupported claims → retry with refined query
   END                  (hard cap at 2 attempts)
 ```
@@ -91,7 +91,7 @@ The eval harness tracks three gates (tune thresholds in `eval/run_eval.py`):
 ## Stack
 
 - Orchestration: **LangGraph**
-- Models via **Groq**: **Llama 3.3 70B Versatile** (synthesis + critic) + **Llama 3.1 8B Instant** (router)
+- Model via **Groq**: **Llama 3.1 8B Instant** — fast, generous free-tier quota (500K tokens/day)
 - Embeddings: `sentence-transformers/all-MiniLM-L6-v2` (local, 384-d)
 - Vector store: **ChromaDB** (persistent, cosine, HNSW)
 - PDF: `pdfplumber`
