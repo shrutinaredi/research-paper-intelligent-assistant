@@ -236,6 +236,55 @@ def ingest_pdf(pdf_path: str, collection: chromadb.Collection, model: SentenceTr
     print(f"  Stored {len(all_chunks)} chunks in ChromaDB")
 
 
+def ingest_file_obj(
+    file_obj,
+    filename: str,
+    collection: chromadb.Collection,
+    model: SentenceTransformer,
+) -> int:
+    """Ingest an uploaded PDF (file-like object).
+
+    Used by the Streamlit UI when the user uploads via file_uploader.
+    Shares extraction / chunking / embedding logic with ingest_pdf() but
+    reads from an in-memory buffer instead of a path.
+
+    Returns the number of chunks stored.
+    """
+    pdf_name = Path(filename).stem
+
+    pages = []
+    with pdfplumber.open(file_obj) as pdf:
+        for i, page in enumerate(pdf.pages):
+            text = page.extract_text()
+            if text and text.strip():
+                pages.append({"page": i + 1, "text": text.strip()})
+
+    if not pages:
+        return 0
+
+    all_chunks, all_metadatas, all_ids = [], [], []
+    for page_data in pages:
+        for chunk_idx, chunk in enumerate(chunk_text(page_data["text"])):
+            all_chunks.append(chunk)
+            all_ids.append(make_chunk_id(pdf_name, page_data["page"], chunk_idx))
+            all_metadatas.append(
+                {
+                    "source": pdf_name,
+                    "page": page_data["page"],
+                    "chunk": chunk_idx,
+                }
+            )
+
+    embeddings = embed_texts(all_chunks, model)
+    collection.upsert(
+        ids=all_ids,
+        documents=all_chunks,
+        embeddings=embeddings,
+        metadatas=all_metadatas,
+    )
+    return len(all_chunks)
+
+
 def ingest_all_pdfs(pdfs_dir: str = PDFS_DIR):
     """
     Ingests every PDF in the pdfs_dir folder.
