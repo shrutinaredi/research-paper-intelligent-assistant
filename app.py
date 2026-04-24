@@ -8,17 +8,23 @@ critic verdict.
 Run:  streamlit run app.py
 """
 
+import os
+
 import chromadb
 import streamlit as st
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
-from agents import run_query
-from agents.retriever import set_retrieval_context
-from agents.telemetry import log_feedback
-from ingest import EMBEDDING_MODEL, ingest_file_obj
-
+# Local dev reads .env; Streamlit Cloud's st.secrets doesn't auto-export to
+# os.environ, so bridge it here before any Groq client is instantiated.
 load_dotenv()
+if "GROQ_API_KEY" in st.secrets and not os.getenv("GROQ_API_KEY"):
+    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+
+from agents import run_query  # noqa: E402  (imports after env is wired)
+from agents.retriever import set_retrieval_context  # noqa: E402
+from agents.telemetry import log_feedback  # noqa: E402
+from ingest import EMBEDDING_MODEL, ingest_file_obj  # noqa: E402
 
 MAX_PDFS = 5
 
