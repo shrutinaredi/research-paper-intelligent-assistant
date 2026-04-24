@@ -1,19 +1,18 @@
 """Router agent — classifies a question and picks retrieval parameters.
 
-Uses Gemini 2.5 Flash with thinking disabled: this is a fast, cheap
-structured-output call, not a reasoning task. The output is parsed into
-a `RouterDecision` Pydantic model.
+Uses Llama 3.1 8B Instant via Groq for speed. Output is a JSON object
+validated against `RouterDecision` (Pydantic).
 """
 
+import json
 from typing import Literal
 
-from google import genai
-from google.genai import types
-from pydantic import BaseModel, Field
+from groq import Groq
+from pydantic import BaseModel, Field, ValidationError
 
 from .state import GraphState
 
-ROUTER_MODEL = "gemini-2.5-flash-lite"
+ROUTER_MODEL = "llama-3.1-8b-instant"
 
 ROUTER_SYSTEM = """You are the routing layer of a research-paper Q&A system.
 
@@ -31,7 +30,14 @@ Types:
 
 Also emit a `retrieval_query`: a short, keyword-dense rewrite optimized for \
 semantic search. Drop conversational filler, expand abbreviations, include \
-domain terms the user implied."""
+domain terms the user implied.
+
+Respond with ONLY a JSON object. No prose before or after. Schema:
+{
+  "question_type": "factual" | "multihop" | "comparison",
+  "top_k": integer,
+  "retrieval_query": string
+}"""
 
 
 class RouterDecision(BaseModel):
@@ -40,30 +46,37 @@ class RouterDecision(BaseModel):
     retrieval_query: str
 
 
-_client: genai.Client | None = None
+_client: Groq | None = None
 
 
-def _get_client() -> genai.Client:
+def _get_client() -> Groq:
     global _client
     if _client is None:
-        _client = genai.Client()
+        _client = Groq()
     return _client
 
 
 def route(state: GraphState) -> GraphState:
     question = state["question"]
 
-    response = _get_client().models.generate_content(
+    response = _get_client().chat.completions.create(
         model=ROUTER_MODEL,
-        contents=question,
-        config=types.GenerateContentConfig(
-            system_instruction=ROUTER_SYSTEM,
-            response_mime_type="application/json",
-            response_schema=RouterDecision,
-        ),
+        messages=[
+            {"role": "system", "content": ROUTER_SYSTEM},
+            {"role": "user", "content": question},
+        ],
+        response_format={"type": "json_object"},
+        temperature=0,
+        max_completion_tokens=256,
     )
 
-    decision: RouterDecision = response.parsed
+    raw = response.choices[0].message.content
+    try:
+        decision = RouterDecision.model_validate_json(raw)
+    except ValidationError:
+        # Fallback if the model wraps JSON in prose — extract first object
+        start, end = raw.find("{"), raw.rfind("}") + 1
+        decision = RouterDecision.model_validate(json.loads(raw[start:end]))
 
     return {
         "question_type": decision.question_type,

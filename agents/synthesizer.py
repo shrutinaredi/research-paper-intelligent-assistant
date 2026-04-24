@@ -1,19 +1,15 @@
 """Synthesizer agent — generates the final answer from retrieved chunks.
 
-Uses Gemini 2.5 Flash with thinking enabled (adaptive budget): this is
-the reasoning step, and the cost of getting it wrong is the whole
-point of the critic loop.
-
-The system prompt forces the model to answer *only* from retrieved
-chunks and to cite every claim as [source, p.N].
+Uses Llama 3.3 70B Versatile via Groq — the biggest model we use, for the
+reasoning-heavy step. The system prompt constrains the model to cite
+every claim as [source, p.N] from retrieved excerpts only.
 """
 
-from google import genai
-from google.genai import types
+from groq import Groq
 
 from .state import GraphState
 
-SYNTH_MODEL = "gemini-2.5-flash-lite"
+SYNTH_MODEL = "llama-3.3-70b-versatile"
 
 SYNTH_SYSTEM = """You are a research assistant answering questions about \
 academic papers.
@@ -32,13 +28,14 @@ Rules:
 4. Do not invent page numbers, paper titles, or quotations. If an excerpt \
    does not cover the claim, don't make the claim."""
 
-_client: genai.Client | None = None
+
+_client: Groq | None = None
 
 
-def _get_client() -> genai.Client:
+def _get_client() -> Groq:
     global _client
     if _client is None:
-        _client = genai.Client()
+        _client = Groq()
     return _client
 
 
@@ -69,12 +66,14 @@ def synthesize(state: GraphState) -> GraphState:
         f"[source, p.N] citations."
     )
 
-    response = _get_client().models.generate_content(
+    response = _get_client().chat.completions.create(
         model=SYNTH_MODEL,
-        contents=user_content,
-        config=types.GenerateContentConfig(
-            system_instruction=SYNTH_SYSTEM,
-        ),
+        messages=[
+            {"role": "system", "content": SYNTH_SYSTEM},
+            {"role": "user", "content": user_content},
+        ],
+        temperature=0.1,
+        max_completion_tokens=2048,
     )
 
-    return {"answer": response.text}
+    return {"answer": response.choices[0].message.content}

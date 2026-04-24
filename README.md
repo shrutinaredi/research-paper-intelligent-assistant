@@ -3,8 +3,8 @@
 A multi-agent research assistant that answers questions over a private
 library of PDF research papers with page-level citations.
 
-Orchestrated with **LangGraph** on top of the **Google Gemini API**
-(Gemini 2.5 Flash), with a local **ChromaDB** vector store.
+Orchestrated with **LangGraph** on top of the **Groq API**
+(Llama 3.3 70B + Llama 3.1 8B), with a local **ChromaDB** vector store.
 
 ## Architecture
 
@@ -13,7 +13,7 @@ question
    ↓
 ┌──────────┐
 │  Router  │  classify (factual / multihop / comparison), pick top_k,
-└──────────┘  rewrite query for semantic search   — Gemini 2.5 Flash (thinking off)
+└──────────┘  rewrite query for semantic search      — Llama 3.1 8B Instant
    ↓
 ┌───────────┐
 │ Retriever │  ChromaDB cosine search over chunked PDFs
@@ -21,11 +21,11 @@ question
    ↓
 ┌─────────────┐
 │ Synthesizer │  answer with inline [source, p.N] citations
-└─────────────┘                              — Gemini 2.5 Flash (adaptive thinking)
+└─────────────┘                                   — Llama 3.3 70B Versatile
    ↓
 ┌────────┐
 │ Critic │  verify every claim is grounded in a retrieved chunk
-└────────┘                                    — Gemini 2.5 Flash (thinking off)
+└────────┘                                   — Llama 3.3 70B Versatile
    ↓                 ↘ if unsupported claims → retry with refined query
   END                  (hard cap at 2 attempts)
 ```
@@ -61,8 +61,8 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # set your API key in .env
-# get a free Gemini key at https://aistudio.google.com/app/apikey
-echo "GEMINI_API_KEY=..." > .env
+# get a free Groq key at https://console.groq.com/keys
+echo "GROQ_API_KEY=gsk_..." > .env
 ```
 
 ## Running it
@@ -91,7 +91,7 @@ The eval harness tracks three gates (tune thresholds in `eval/run_eval.py`):
 ## Stack
 
 - Orchestration: **LangGraph**
-- Model: **Gemini 2.5 Flash** — synthesis uses adaptive thinking; router + critic run with thinking disabled for speed
+- Models via **Groq**: **Llama 3.3 70B Versatile** (synthesis + critic) + **Llama 3.1 8B Instant** (router)
 - Embeddings: `sentence-transformers/all-MiniLM-L6-v2` (local, 384-d)
 - Vector store: **ChromaDB** (persistent, cosine, HNSW)
 - PDF: `pdfplumber`

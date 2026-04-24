@@ -1,18 +1,18 @@
 """Critic agent — verifies that every claim in the answer is supported
 by a retrieved chunk, and decides whether to trigger a retry.
 
-Uses Gemini 2.5 Flash with thinking disabled — verification, not
-generation. Output is a structured `CriticOutput` so the graph can
-route on it without string parsing.
+Uses Llama 3.1 8B Instant via Groq. Output is JSON validated against
+`CriticOutput` (Pydantic) so the graph can route on `needs_retry`.
 """
 
-from google import genai
-from google.genai import types
-from pydantic import BaseModel
+import json
+
+from groq import Groq
+from pydantic import BaseModel, ValidationError
 
 from .state import GraphState
 
-CRITIC_MODEL = "gemini-2.5-flash-lite"
+CRITIC_MODEL = "llama-3.3-70b-versatile"
 
 CRITIC_SYSTEM = """You are a verifier for a research-paper Q&A system.
 
@@ -38,7 +38,15 @@ checks out, needs_retry=false and refined_query=null.
 
 Exception: an answer that says "the excerpts do not contain enough \
 information" is considered supported (the model correctly abstained) \
-and should not trigger a retry."""
+and should not trigger a retry.
+
+Respond with ONLY a JSON object. No prose before or after. Schema:
+{
+  "supported": bool,
+  "unsupported_claims": [string, ...],
+  "needs_retry": bool,
+  "refined_query": string or null
+}"""
 
 
 class CriticOutput(BaseModel):
@@ -48,13 +56,13 @@ class CriticOutput(BaseModel):
     refined_query: str | None
 
 
-_client: genai.Client | None = None
+_client: Groq | None = None
 
 
-def _get_client() -> genai.Client:
+def _get_client() -> Groq:
     global _client
     if _client is None:
-        _client = genai.Client()
+        _client = Groq()
     return _client
 
 
@@ -75,17 +83,23 @@ def critique(state: GraphState) -> GraphState:
         f"Answer to verify:\n{answer}"
     )
 
-    response = _get_client().models.generate_content(
+    response = _get_client().chat.completions.create(
         model=CRITIC_MODEL,
-        contents=user_content,
-        config=types.GenerateContentConfig(
-            system_instruction=CRITIC_SYSTEM,
-            response_mime_type="application/json",
-            response_schema=CriticOutput,
-        ),
+        messages=[
+            {"role": "system", "content": CRITIC_SYSTEM},
+            {"role": "user", "content": user_content},
+        ],
+        response_format={"type": "json_object"},
+        temperature=0,
+        max_completion_tokens=1024,
     )
 
-    parsed: CriticOutput = response.parsed
+    raw = response.choices[0].message.content
+    try:
+        parsed = CriticOutput.model_validate_json(raw)
+    except ValidationError:
+        start, end = raw.find("{"), raw.rfind("}") + 1
+        parsed = CriticOutput.model_validate(json.loads(raw[start:end]))
 
     attempts = state.get("attempts", 0) + 1
     max_attempts = state.get("max_attempts", 2)
