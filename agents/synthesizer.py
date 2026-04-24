@@ -35,7 +35,9 @@ _client: Groq | None = None
 def _get_client() -> Groq:
     global _client
     if _client is None:
-        _client = Groq()
+        # max_retries=5 + long timeout so the SDK can honor Groq's
+        # retry-after header on 429s (free-tier TPM recoveries take ~20s)
+        _client = Groq(max_retries=5, timeout=120.0)
     return _client
 
 

@@ -62,7 +62,7 @@ _client: Groq | None = None
 def _get_client() -> Groq:
     global _client
     if _client is None:
-        _client = Groq()
+        _client = Groq(max_retries=5, timeout=120.0)
     return _client
 
 
@@ -72,14 +72,21 @@ def _format_chunks(chunks: list[dict]) -> str:
     )
 
 
+MAX_CRITIC_CHUNKS = 5  # Keeps the critic call under the 12K TPM free-tier bucket
+
+
 def critique(state: GraphState) -> GraphState:
     question = state["question"]
     chunks = state.get("chunks", [])
     answer = state.get("answer", "")
 
+    # Chunks come back score-sorted; the lowest-ranked ones rarely carry
+    # claims the synthesizer actually used, so trimming is safe for verification.
+    critic_chunks = chunks[:MAX_CRITIC_CHUNKS]
+
     user_content = (
         f"Question: {question}\n\n"
-        f"Excerpts:\n{_format_chunks(chunks)}\n\n"
+        f"Excerpts:\n{_format_chunks(critic_chunks)}\n\n"
         f"Answer to verify:\n{answer}"
     )
 
