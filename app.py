@@ -18,8 +18,25 @@ from sentence_transformers import SentenceTransformer
 # Local dev reads .env; Streamlit Cloud's st.secrets doesn't auto-export to
 # os.environ, so bridge it here before any Groq client is instantiated.
 load_dotenv()
-if "GROQ_API_KEY" in st.secrets and not os.getenv("GROQ_API_KEY"):
-    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+try:
+    secret_key = st.secrets.get("GROQ_API_KEY") if hasattr(st, "secrets") else None
+except Exception:
+    secret_key = None
+if secret_key and not os.getenv("GROQ_API_KEY"):
+    os.environ["GROQ_API_KEY"] = secret_key
+
+if not os.getenv("GROQ_API_KEY"):
+    st.set_page_config(page_title="Research Assistant", layout="wide")
+    st.title("Research Assistant")
+    st.error(
+        "**`GROQ_API_KEY` is not configured.**\n\n"
+        "If you're running locally: add it to `.env`.\n\n"
+        "If you're on Streamlit Cloud: open **Manage app → Settings → "
+        "Secrets** and add a line exactly like this (quotes required):\n\n"
+        '`GROQ_API_KEY = "gsk_..."`\n\n'
+        "Click **Save** — the app reboots automatically."
+    )
+    st.stop()
 
 from agents import run_query  # noqa: E402  (imports after env is wired)
 from agents.retriever import set_retrieval_context  # noqa: E402
