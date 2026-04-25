@@ -26,13 +26,13 @@ if secret_key and not os.getenv("GROQ_API_KEY"):
     os.environ["GROQ_API_KEY"] = secret_key
 
 st.set_page_config(
-    page_title="Research Assistant",
+    page_title="Intelligent Research Assistant",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 if not os.getenv("GROQ_API_KEY"):
-    st.title("Research Assistant")
+    st.title("Intelligent Research Assistant")
     st.error(
         "**`GROQ_API_KEY` is not configured.**\n\n"
         "If you're running locally: add it to `.env`.\n\n"
@@ -105,12 +105,13 @@ st.markdown(
 
       /* Empty-state card */
       .empty-card {
-        border: 1px dashed #CBD5E1;
+        border: 1px dashed #C7D2FE;
         border-radius: 12px;
-        padding: 1.5rem;
+        padding: 1.75rem;
         text-align: center;
-        background: #F8FAFC;
+        background: #FFFFFF;
         color: #475569;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
       }
 
       /* Footer */
@@ -228,7 +229,7 @@ with st.sidebar:
 # Hero
 # ---------------------------------------------------------------------------
 
-st.markdown('<div class="hero-title">Research Assistant</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-title">Intelligent Research Assistant</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="hero-tag">Ask questions over your own research papers · '
     'page-level citations · self-verifying critic loop</div>',
@@ -340,8 +341,9 @@ def render_run(run: dict) -> None:
                 )
                 st.markdown(
                     f"<div style='font-size:0.9rem;color:#334155;"
-                    f"background:#F8FAFC;padding:0.75rem;border-radius:8px;"
-                    f"margin-bottom:0.5rem;'>{chunk['text']}</div>",
+                    f"background:#F4F3FB;padding:0.75rem;border-radius:8px;"
+                    f"margin-bottom:0.5rem;border:1px solid #E0E7FF;'>"
+                    f"{chunk['text']}</div>",
                     unsafe_allow_html=True,
                 )
 

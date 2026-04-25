@@ -1,4 +1,4 @@
-# Research Assistant
+# Intelligent Research Assistant
 
 A multi-agent research assistant that answers questions over a private
 library of PDF research papers with page-level citations.
