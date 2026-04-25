@@ -66,11 +66,11 @@ st.markdown(
         font-weight: 700;
         letter-spacing: -0.02em;
         margin-bottom: 0.25rem;
-        color: #0F172A;
+        color: #1F1B16;
       }
       .hero-tag {
         font-size: 1.05rem;
-        color: #475569;
+        color: #6B5F4F;
         margin-bottom: 1.5rem;
       }
 
@@ -105,21 +105,21 @@ st.markdown(
 
       /* Empty-state card */
       .empty-card {
-        border: 1px dashed #C7D2FE;
+        border: 1px dashed #D8CFBE;
         border-radius: 12px;
         padding: 1.75rem;
         text-align: center;
         background: #FFFFFF;
-        color: #475569;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        color: #6B5F4F;
+        box-shadow: 0 1px 2px rgba(31, 27, 22, 0.05);
       }
 
       /* Footer */
       .footer-note {
         margin-top: 3rem;
         padding-top: 1rem;
-        border-top: 1px solid #E2E8F0;
-        color: #64748B;
+        border-top: 1px solid #E5DBC8;
+        color: #6B5F4F;
         font-size: 0.85rem;
       }
     </style>
@@ -340,9 +340,9 @@ def render_run(run: dict) -> None:
                     unsafe_allow_html=True,
                 )
                 st.markdown(
-                    f"<div style='font-size:0.9rem;color:#334155;"
-                    f"background:#F4F3FB;padding:0.75rem;border-radius:8px;"
-                    f"margin-bottom:0.5rem;border:1px solid #E0E7FF;'>"
+                    f"<div style='font-size:0.9rem;color:#3D362D;"
+                    f"background:#FAF6EF;padding:0.75rem;border-radius:8px;"
+                    f"margin-bottom:0.5rem;border:1px solid #E5DBC8;'>"
                     f"{chunk['text']}</div>",
                     unsafe_allow_html=True,
                 )
